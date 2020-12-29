@@ -3,6 +3,7 @@
 #include "Minuit2/FunctionMinimum.h"
 #include "Minuit2/MnMigrad.h"
 #include "Minuit2/FCNBase.h"
+#include <iostream>
 
 using namespace ROOT::Minuit2;
 
@@ -62,20 +63,24 @@ JLCXX_MODULE define_julia_module(jlcxx::Module &minuit2)
     minuit2.add_type<JuliaFcn>("JuliaFcn")
         .constructor<jlcxx::SafeCFunction, jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>>();
 
-    minuit2.method("fit", [](JuliaFcn* fcn, jlcxx::ArrayRef<double> pars) {
+    minuit2.method("fit", [](JuliaFcn& fcn, jlcxx::ArrayRef<double> pars) {
         VariableMetricMinimizer theMinimizer;
-        // // demonstrate minimal required interface for minimization
-        // // create Minuit parameters without names
-        // // starting values for parameters
-        // std::vector<double> init_par;
-        // for (auto p : pars) init_par.push_back(p);
+        // demonstrate minimal required interface for minimization
+        // create Minuit parameters without names
+        // starting values for parameters
+        std::vector<double> init_par;
+        for (auto p : pars) init_par.push_back(p);
 
-        // // starting values for initial uncertainties
-        // std::vector<double> init_err = {0.1, 0.1, 0.1};
+        // starting values for initial uncertainties
+        std::vector<double> init_err = {0.1, 0.1, 0.1};
 
-        // // minimize
-        // FunctionMinimum min =
-        //     theMinimizer.Minimize(*fcn, init_par, init_err);
+        // minimize
+        FunctionMinimum min =
+            theMinimizer.Minimize(fcn, init_par, init_err);
+        const double* data = min.Parameters().Vec().Data();
+        for (size_t idx=0; idx<pars.size(); ++idx) {
+            pars[idx] = data[idx]; 
+        }
     });
 
 }

@@ -56,7 +56,7 @@ include_directories(${Minuit2_INCLUDE_DIRS}/Minuit2)
 include_directories(${Minuit2_DIR}/../../../include/Minuit2)
 
 add_library(minuit2wrap SHARED src/minuit2Wrap.cxx )
-target_link_libraries(minuit2wrap ${Minuit2_LIBRARY} JlCxx::cxxwrap_julia JlCxx::cxxwrap_julia_stl)
+target_link_libraries(minuit2wrap ${Minuit2_LIBRARY} JlCxx::cxxwrap_julia JlCxx::cxxwrap_julia_stl Minuit2::Minuit2Math Minuit2::Minuit2)
 
 install(TARGETS
   minuit2wrap
