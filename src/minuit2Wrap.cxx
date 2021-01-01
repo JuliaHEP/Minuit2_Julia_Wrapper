@@ -2,6 +2,8 @@
 #include "jlcxx/functions.hpp"
 #include "Minuit2/FunctionMinimum.h"
 #include "Minuit2/MnMigrad.h"
+#include "Minuit2/MnMinos.h"
+#include "Minuit2/MnUserParameters.h"
 #include "Minuit2/FCNBase.h"
 #include <iostream>
 
@@ -63,7 +65,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module &minuit2)
     minuit2.add_type<JuliaFcn>("JuliaFcn")
         .constructor<jlcxx::SafeCFunction, jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>>();
 
-    minuit2.method("fit", [](JuliaFcn& fcn, jlcxx::ArrayRef<double> pars) {
+    minuit2.add_type<MnUserParameters>("MnUserParameters");
+
+    minuit2.method("fit_VariableMetric", [](JuliaFcn& fcn, jlcxx::ArrayRef<double> pars) {
         VariableMetricMinimizer theMinimizer;
         // demonstrate minimal required interface for minimization
         // create Minuit parameters without names
@@ -83,6 +87,42 @@ JLCXX_MODULE define_julia_module(jlcxx::Module &minuit2)
         }
     });
 
+    minuit2.method("fit_Migrad", [](JuliaFcn& fcn, jlcxx::ArrayRef<double> pars, jlcxx::ArrayRef<double> errs) {
+        std::vector<double> parameters;
+        for (auto p : pars) parameters.push_back(p);
+        std::vector<double> errors;
+        for (auto e : errs) errors.push_back(e);
+
+        MnUserParameters upar(parameters, errors);
+        MnMigrad migrad(fcn, upar);
+        FunctionMinimum min = migrad();
+
+        const double* data = min.Parameters().Vec().Data();
+        for (size_t idx=0; idx<pars.size(); ++idx) {
+            pars[idx] = data[idx]; 
+        }
+    });
+
+    minuit2.method("fit_Migrad_Minos", [](JuliaFcn& fcn, jlcxx::ArrayRef<double> pars, jlcxx::ArrayRef<double> lower, jlcxx::ArrayRef<double> upper) {
+        std::vector<double> parameters;
+        for (auto p : pars) parameters.push_back(p);
+        std::vector<double> errors;
+        for (auto e : lower) errors.push_back(e);
+
+        MnUserParameters upar(parameters, errors);
+        MnMigrad migrad(fcn, upar);
+        FunctionMinimum min = migrad();
+
+        // create MINOS error factory
+        MnMinos minos(fcn, min);
+        for (size_t idx=0; idx<pars.size(); ++idx) {
+            pars[idx] = min.UserState().Value(idx);
+            // 1-sigma MINOS errors (lower, upper)
+            std::pair<double, double> e = minos(idx);
+            lower[idx] = e.first;
+            upper[idx] = e.second;
+        }
+    });
 }
 
 // #include "GaussFcn.h"
