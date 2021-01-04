@@ -11,12 +11,7 @@ sources = [
 julia_version = v"1.5.3"
 
 name = "Minuit2_Julia_Wrapper"
-version = get(ENV, "TRAVIS_TAG", "")
-if version == ""
-	version = v"0.1.0-alpha1"
-else
-	version = VersionNumber(version)
-end
+version = v"0.1.1"
 
 # Bash recipe for building across all platforms
 script = raw"""
