@@ -9,9 +9,9 @@
 
 using namespace ROOT::Minuit2;
 
-class JuliaFcn : public FCNBase{
+class TestJuliaFcn : public FCNBase{
     public:
-    JuliaFcn(
+    TestJuliaFcn(
         jlcxx::SafeCFunction func,
         jlcxx::ArrayRef<double> meas,
         jlcxx::ArrayRef<double> pos,
@@ -55,6 +55,28 @@ class JuliaFcn : public FCNBase{
     double m_errorDef; // error definition (chi2 or logL)
 };
 
+class JuliaFcn : public FCNBase{
+    public:
+    JuliaFcn(jlcxx::SafeCFunction func) 
+        : m_func(func),
+          m_errorDef(1.0)
+    {
+    }
+    virtual double Up() const {
+        return m_errorDef;
+    }
+    virtual double operator()(const std::vector<double>& par) const {
+        auto f = jlcxx::make_function_pointer<double(std::vector<double>)>(m_func);
+        return f(par);
+    }
+    void setErrorDef(double def) {
+        m_errorDef = def;
+    }
+    private:
+    jlcxx::SafeCFunction m_func; // the function, from the julia side
+    double m_errorDef; // error definition (chi2 or logL)
+};
+
 
 JLCXX_MODULE define_julia_module(jlcxx::Module &minuit2)
 {
@@ -62,10 +84,33 @@ JLCXX_MODULE define_julia_module(jlcxx::Module &minuit2)
         return func(parameters);
     });
 
-    minuit2.add_type<JuliaFcn>("JuliaFcn")
+    minuit2.add_type<TestJuliaFcn>("TestJuliaFcn")
         .constructor<jlcxx::SafeCFunction, jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>>();
 
+    minuit2.add_type<JuliaFcn>("JuliaFcn")
+        .constructor<jlcxx::SafeCFunction>();
+
     minuit2.add_type<MnUserParameters>("MnUserParameters");
+
+    minuit2.method("fit_VariableMetricTest", [](TestJuliaFcn& fcn, jlcxx::ArrayRef<double> pars) {
+        VariableMetricMinimizer theMinimizer;
+        // demonstrate minimal required interface for minimization
+        // create Minuit parameters without names
+        // starting values for parameters
+        std::vector<double> init_par;
+        for (auto p : pars) init_par.push_back(p);
+
+        // starting values for initial uncertainties
+        std::vector<double> init_err = {0.1, 0.1, 0.1};
+
+        // minimize
+        FunctionMinimum min =
+            theMinimizer.Minimize(fcn, init_par, init_err);
+        const double* data = min.Parameters().Vec().Data();
+        for (size_t idx=0; idx<pars.size(); ++idx) {
+            pars[idx] = data[idx]; 
+        }
+    });
 
     minuit2.method("fit_VariableMetric", [](JuliaFcn& fcn, jlcxx::ArrayRef<double> pars) {
         VariableMetricMinimizer theMinimizer;
@@ -87,6 +132,22 @@ JLCXX_MODULE define_julia_module(jlcxx::Module &minuit2)
         }
     });
 
+    minuit2.method("fit_MigradTest", [](TestJuliaFcn& fcn, jlcxx::ArrayRef<double> pars, jlcxx::ArrayRef<double> errs) {
+        std::vector<double> parameters;
+        for (auto p : pars) parameters.push_back(p);
+        std::vector<double> errors;
+        for (auto e : errs) errors.push_back(e);
+
+        MnUserParameters upar(parameters, errors);
+        MnMigrad migrad(fcn, upar);
+        FunctionMinimum min = migrad();
+
+        const double* data = min.Parameters().Vec().Data();
+        for (size_t idx=0; idx<pars.size(); ++idx) {
+            pars[idx] = data[idx]; 
+        }
+    });
+
     minuit2.method("fit_Migrad", [](JuliaFcn& fcn, jlcxx::ArrayRef<double> pars, jlcxx::ArrayRef<double> errs) {
         std::vector<double> parameters;
         for (auto p : pars) parameters.push_back(p);
@@ -100,6 +161,27 @@ JLCXX_MODULE define_julia_module(jlcxx::Module &minuit2)
         const double* data = min.Parameters().Vec().Data();
         for (size_t idx=0; idx<pars.size(); ++idx) {
             pars[idx] = data[idx]; 
+        }
+    });
+
+    minuit2.method("fit_Migrad_MinosTest", [](TestJuliaFcn& fcn, jlcxx::ArrayRef<double> pars, jlcxx::ArrayRef<double> lower, jlcxx::ArrayRef<double> upper) {
+        std::vector<double> parameters;
+        for (auto p : pars) parameters.push_back(p);
+        std::vector<double> errors;
+        for (auto e : lower) errors.push_back(e);
+
+        MnUserParameters upar(parameters, errors);
+        MnMigrad migrad(fcn, upar);
+        FunctionMinimum min = migrad();
+
+        // create MINOS error factory
+        MnMinos minos(fcn, min);
+        for (size_t idx=0; idx<pars.size(); ++idx) {
+            pars[idx] = min.UserState().Value(idx);
+            // 1-sigma MINOS errors (lower, upper)
+            std::pair<double, double> e = minos(idx);
+            lower[idx] = e.first;
+            upper[idx] = e.second;
         }
     });
 

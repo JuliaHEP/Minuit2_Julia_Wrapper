@@ -11,7 +11,7 @@ sources = [
 julia_version = v"1.5.3"
 
 name = "Minuit2_Julia_Wrapper"
-version = v"0.1.1"
+version = v"0.2"
 
 # Bash recipe for building across all platforms
 script = raw"""
