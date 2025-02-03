@@ -26,3 +26,4 @@ install(TARGETS Minuit2Wrap
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION lib)
+install(FILES src/jl/Minuit2-export.jl DESTINATION .)
