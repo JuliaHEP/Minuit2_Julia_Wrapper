@@ -21,6 +21,7 @@ add_library(Minuit2Wrap SHARED ${SOURCE_DIR}/cpp/Minuit2Wrap.cxx ${SOURCE_DIR}/c
 
 target_include_directories(Minuit2Wrap PRIVATE ${SOURCE_DIR})
 target_link_libraries(Minuit2Wrap JlCxx::cxxwrap_julia JlCxx::cxxwrap_julia_stl Minuit2::Minuit2)
+target_compile_definitions(Minuit2Wrap PUBLIC __cpp_lib_span)  # Needed for MacOS
 
 install(TARGETS Minuit2Wrap
         LIBRARY DESTINATION lib
