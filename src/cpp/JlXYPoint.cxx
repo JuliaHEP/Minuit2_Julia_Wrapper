@@ -17,7 +17,7 @@ struct JlXYPoint: public Wrapper {
 
   JlXYPoint(jlcxx::Module& jlModule): Wrapper(jlModule){
     DEBUG_MSG("Adding wrapper for type XYPoint (" __HERE__ ")");
-    // defined in ./cpp/Minuit2Wrap.h:56:7
+    // defined in ./cpp/Minuit2Wrap.h:63:7
     jlcxx::TypeWrapper<XYPoint>  t = jlModule.add_type<XYPoint>("XYPoint");
     jlcxx::stl::apply_stl<XYPoint>(jlModule);
     type_ = std::unique_ptr<jlcxx::TypeWrapper<XYPoint>>(new jlcxx::TypeWrapper<XYPoint>(jlModule, t));
@@ -29,22 +29,22 @@ struct JlXYPoint: public Wrapper {
 
 
     DEBUG_MSG("Adding wrapper for void XYPoint::XYPoint(double, double) (" __HERE__ ")");
-    // defined in ./cpp/Minuit2Wrap.h:58:5
+    // defined in ./cpp/Minuit2Wrap.h:65:5
     t.constructor<double, double>(/*finalize=*/jlcxx::finalize_policy::yes);
 
 
     DEBUG_MSG("Adding wrapper for void XYPoint::XYPoint(const XYPoint &) (" __HERE__ ")");
-    // defined in ./cpp/Minuit2Wrap.h:60:5
+    // defined in ./cpp/Minuit2Wrap.h:67:5
     t.constructor<const XYPoint &>(/*finalize=*/jlcxx::finalize_policy::yes);
 
     DEBUG_MSG("Adding wrapper for double XYPoint::X() (" __HERE__ ")");
     // signature to use in the veto list: double XYPoint::X()
-    // defined in ./cpp/Minuit2Wrap.h:61:12
+    // defined in ./cpp/Minuit2Wrap.h:68:12
     t.method("X", static_cast<double (XYPoint::*)()  const>(&XYPoint::X));
 
     DEBUG_MSG("Adding wrapper for double XYPoint::Y() (" __HERE__ ")");
     // signature to use in the veto list: double XYPoint::Y()
-    // defined in ./cpp/Minuit2Wrap.h:62:12
+    // defined in ./cpp/Minuit2Wrap.h:69:12
     t.method("Y", static_cast<double (XYPoint::*)()  const>(&XYPoint::Y));
   }
 
